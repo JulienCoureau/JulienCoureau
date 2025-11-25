@@ -1,0 +1,25 @@
+{
+  "actions": [
+    {
+      "ticker": "AAPL",
+      "nom": "Apple Inc.",
+      "pays": "United States",
+      "secteur": "Technology",
+      "industrie": "Consumer Electronics"
+    },
+    {
+      "ticker": "TSLA",
+      "nom": "Tesla, Inc.",
+      "pays": "United States",
+      "secteur": "Consumer Cyclical",
+      "industrie": "Auto Manufacturers"
+    },
+    {
+      "ticker": "MC.PA",
+      "nom": "LVMH Moët Hennessy Louis Vuitton",
+      "pays": "France",
+      "secteur": "Consumer Cyclical",
+      "industrie": "Luxury Goods"
+    }
+  ]
+}
