@@ -1,0 +1,22 @@
+{
+  "markets": {
+    "États-Unis": "",
+    "France": ".PA",
+    "Allemagne": ".DE",
+    "Royaume-Uni": ".L",
+    "Canada": ".TO",
+    "Japon": ".T",
+    "Suisse": ".SW",
+    "Australie": ".AX",
+    "Hong Kong": ".HK",
+    "Inde": ".NS",
+    "Brésil": ".SA",
+    "Pays-Bas": ".AS",
+    "Belgique": ".BR",
+    "Espagne": ".MC",
+    "Italie": ".MI",
+    "Suède": ".ST",
+    "Norvège": ".OL",
+    "Danemark": ".CO"
+  }
+}
