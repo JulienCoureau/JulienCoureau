@@ -1,0 +1,22 @@
+[
+  {
+    "nom": "Apple",
+    "ticker": "AAPL",
+    "industrie": "Technologie - Électronique"
+  },
+  {
+    "nom": "Microsoft",
+    "ticker": "MSFT",
+    "industrie": "Technologie - Logiciels"
+  },
+  {
+    "nom": "Tesla",
+    "ticker": "TSLA",
+    "industrie": "Automobile - Véhicules électriques"
+  },
+  {
+    "nom": "Amazon",
+    "ticker": "AMZN",
+    "industrie": "E-commerce"
+  }
+]
