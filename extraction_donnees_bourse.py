@@ -247,6 +247,27 @@ for fichier in fichiers_selectionnes:
 
 print(f"\nTotal de {len(toutes_donnees)} / 22 lignes extraites")
 
+# Vérification des métriques manquantes
+if len(toutes_donnees) != 22:
+    # Liste complète des métriques attendues
+    metriques_attendues = (
+        metriques_prix_juste_compte +
+        metriques_prix_juste_bilan +
+        metriques_prix_juste_fcf +
+        metriques_prix_juste_valorisation
+    )
+
+    # Métriques effectivement récoltées
+    metriques_recoltees = [ligne['Métrique'] for ligne in toutes_donnees]
+
+    # Identifier les métriques manquantes
+    metriques_manquantes = [m for m in metriques_attendues if m not in metriques_recoltees]
+
+    if metriques_manquantes:
+        print(f"\n⚠️  ATTENTION : {len(metriques_manquantes)} métrique(s) manquante(s) :")
+        for metrique in metriques_manquantes:
+            print(f"  - {metrique}")
+
 #9 Sauvegarde
 # Créer le dossier de sortie si nécessaire
 if not os.path.exists(chemin_json_finance):
