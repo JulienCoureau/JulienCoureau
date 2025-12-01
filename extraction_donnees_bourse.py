@@ -70,8 +70,6 @@ if not os.path.exists(json_path):
 with open(json_path, 'r', encoding='utf-8') as f:
     data_entreprises = json.load(f)
 
-print(f"Fichier JSON chargé : {fichier_json_input}")
-
 #2 Chargement des dossiers a traiter dans Base_de_donnee
 # Chercher tous les fichiers .xlsx dans le dossier Base_de_donnée
 fichiers_excel = [f for f in os.listdir(chemin_base_donnees) if f.endswith('.xlsx') and not f.startswith('~')]
@@ -80,7 +78,7 @@ if not fichiers_excel:
     print(f"Aucun fichier Excel trouvé dans : {chemin_base_donnees}")
     exit()
 
-#4 Normalisation
+#3 Normalisation
 def normaliser_nom(nom):
     """Normalise un nom pour la comparaison"""
     import re
@@ -89,7 +87,7 @@ def normaliser_nom(nom):
     nom = re.sub(r'[^a-z0-9/]', '', nom)
     return nom
 
-#5 Trouve l'entreprise
+#4 Trouve l'entreprise
 def trouver_entreprise(nom_fichier, data_entreprises):
     """Trouve l'entreprise correspondante dans le JSON à partir du nom de fichier"""
     # Extraire le nom sans l'extension
@@ -105,7 +103,7 @@ def trouver_entreprise(nom_fichier, data_entreprises):
     # Si pas trouvé, retourner None
     return None
 
-#3 Selection des fichiers à traiter
+#5 Selection des fichiers à traiter
 try:
     import inquirer
 except ImportError:
@@ -114,7 +112,6 @@ except ImportError:
     subprocess.check_call(['pip', 'install', 'inquirer'])
     import inquirer
 
-# NOUVELLE FONCTIONNALITÉ : Vérifier la correspondance avec le JSON
 fichiers_avec_statut = []
 for fichier in fichiers_excel:
     entreprise = trouver_entreprise(fichier, data_entreprises)
@@ -219,15 +216,11 @@ def extraire_donnees(fichier_excel, sheet_name, metriques):
 toutes_donnees = []
 
 for fichier in fichiers_selectionnes:
-    print(f"\nTraitement de : {fichier}")
-
     entreprise = trouver_entreprise(fichier, data_entreprises)
 
     if not entreprise:
         print(f"  Attention : Entreprise non trouvée dans le JSON pour {fichier}")
         continue
-
-    print(f"  Entreprise trouvée : {entreprise['name']} ({entreprise['ticker']}) - {entreprise['sector']} - {entreprise['industry']} - {entreprise['country']}")
 
     chemin_fichier = os.path.join(chemin_base_donnees, fichier)
 
@@ -241,7 +234,6 @@ for fichier in fichiers_selectionnes:
     }
 
     for sheet_name, metriques in feuilles.items():
-        print(f"  Extraction de la feuille : {sheet_name}")
         donnees = extraire_donnees(chemin_fichier, sheet_name, metriques)
 
         for ligne in donnees:
