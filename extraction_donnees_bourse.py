@@ -276,7 +276,29 @@ if not os.path.exists(chemin_json_finance):
 
 output_path = os.path.join(chemin_json_finance, fichier_json_output)
 
+# Charger les données existantes si le fichier existe
+donnees_existantes = []
+if os.path.exists(output_path):
+    with open(output_path, 'r', encoding='utf-8') as f:
+        try:
+            donnees_existantes = json.load(f)
+        except json.JSONDecodeError:
+            print(f"⚠️  Avertissement : Fichier JSON corrompu, création d'un nouveau fichier")
+            donnees_existantes = []
+
+# Identifier les entreprises traitées dans cette session
+entreprises_traitees = list(set([ligne['Nom'] for ligne in toutes_donnees]))
+
+# Supprimer les anciennes données des entreprises traitées (éviter doublons)
+donnees_existantes = [ligne for ligne in donnees_existantes if ligne['Nom'] not in entreprises_traitees]
+
+# Ajouter les nouvelles données
+donnees_finales = donnees_existantes + toutes_donnees
+
+# Sauvegarder le tout
 with open(output_path, 'w', encoding='utf-8') as f:
-    json.dump(toutes_donnees, f, ensure_ascii=False, indent=2)
+    json.dump(donnees_finales, f, ensure_ascii=False, indent=2)
 
 print(f"Données sauvegardées dans : {fichier_json_output}")
+print(f"  - {len(entreprises_traitees)} entreprise(s) ajoutée(s) : {', '.join(entreprises_traitees)}")
+print(f"  - Total dans la base : {len(set([ligne['Nom'] for ligne in donnees_finales]))} entreprise(s)")
