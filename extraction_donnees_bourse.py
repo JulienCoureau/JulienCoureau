@@ -301,7 +301,21 @@ donnees_existantes = {}
 if os.path.exists(output_path):
     with open(output_path, 'r', encoding='utf-8') as f:
         try:
-            donnees_existantes = json.load(f)
+            donnees_chargees = json.load(f)
+
+            # MIGRATION : Détecter ancien format (liste) et convertir en nouveau format (dict)
+            if isinstance(donnees_chargees, list):
+                print(f"⚠️  Migration : Ancien format détecté, conversion vers nouveau format...")
+                donnees_existantes = {}
+                # L'ancien format n'est pas compatible, on recommence à zéro
+                print(f"   Ancien fichier sauvegardé en {fichier_json_output}.old")
+                # Sauvegarder l'ancien fichier
+                import shutil
+                shutil.copy(output_path, output_path + '.old')
+            else:
+                # Nouveau format, chargement normal
+                donnees_existantes = donnees_chargees
+
         except json.JSONDecodeError:
             print(f"⚠️  Avertissement : Fichier JSON corrompu, création d'un nouveau fichier")
             donnees_existantes = {}
