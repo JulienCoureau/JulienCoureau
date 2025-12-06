@@ -103,45 +103,6 @@ def trouver_entreprise(nom_fichier, data_entreprises):
     # Si pas trouvé, retourner None
     return None
 
-#5 Selection des fichiers à traiter
-try:
-    import inquirer
-except ImportError:
-    print("\nInstallation de la bibliothèque 'inquirer' nécessaire")
-    import subprocess
-    subprocess.check_call(['pip', 'install', 'inquirer'])
-    import inquirer
-
-fichiers_avec_statut = []
-for fichier in fichiers_excel:
-    entreprise = trouver_entreprise(fichier, data_entreprises)
-    if entreprise:
-        fichiers_avec_statut.append(fichier)
-    else:
-        fichiers_avec_statut.append(f"{fichier} (?)")
-
-questions = [
-    inquirer.Checkbox(
-        'fichiers',
-        message="Sélectionnez les fichiers à traiter (utilisez les flèches ↑↓, Espace pour sélectionner, Entrée pour valider)",
-        choices=fichiers_avec_statut,
-    ),
-]
-
-answers = inquirer.prompt(questions)
-fichiers_selectionnes_bruts = answers['fichiers'] if answers else []
-
-if not fichiers_selectionnes_bruts:
-    print("Aucun fichier sélectionné. Arrêt du script.")
-    exit()
-
-# Nettoyer les noms de fichiers (enlever le " (?)" pour le traitement)
-fichiers_selectionnes = [f.replace(" (?)", "") for f in fichiers_selectionnes_bruts]
-print(f"\n{len(fichiers_selectionnes)} fichier(s) sélectionné(s) :")
-
-for fichier in fichiers_selectionnes:
-    print(f"  - {fichier}")
-
 #6 Conversion des valeurs
 def convertir_valeur(valeur, metrique):
     """Convertit les valeurs selon leur type et la métrique - RETOURNE DES NOMBRES"""
@@ -226,107 +187,178 @@ def extraire_donnees(fichier_excel, sheet_name, metriques):
         print(f"  Erreur lors de la lecture de la feuille '{sheet_name}': {e}")
         return {}
 
-#8 Traitement des fichiers
-donnees_structurees = {}
-metriques_total = 0
+# BOUCLE PRINCIPALE pour traiter plusieurs sessions
+while True:
+    #5 Selection des fichiers à traiter
+    try:
+        import inquirer
+    except ImportError:
+        print("\nInstallation de la bibliothèque 'inquirer' nécessaire")
+        import subprocess
+        subprocess.check_call(['pip', 'install', 'inquirer'])
+        import inquirer
 
-for fichier in fichiers_selectionnes:
-    entreprise = trouver_entreprise(fichier, data_entreprises)
+    fichiers_avec_statut = []
+    for fichier in fichiers_excel:
+        entreprise = trouver_entreprise(fichier, data_entreprises)
+        if entreprise:
+            fichiers_avec_statut.append(fichier)
+        else:
+            fichiers_avec_statut.append(f"{fichier} (?)")
 
-    if not entreprise:
-        print(f"  Attention : Entreprise non trouvée dans le JSON pour {fichier}")
-        continue
+    questions = [
+        inquirer.Checkbox(
+            'fichiers',
+            message="Sélectionnez les fichiers à traiter (utilisez les flèches ↑↓, Espace pour sélectionner, Entrée pour valider)",
+            choices=fichiers_avec_statut,
+        ),
+    ]
 
-    nom_entreprise = entreprise['name']
+    answers = inquirer.prompt(questions)
+    fichiers_selectionnes_bruts = answers['fichiers'] if answers else []
 
-    # Créer la structure pour cette entreprise
-    donnees_structurees[nom_entreprise] = {
-        "infos": {
-            "ticker": entreprise['ticker'],
-            "secteur": entreprise['sector'],
-            "industrie": entreprise['industry'],
-            "pays": entreprise['country']
+    if not fichiers_selectionnes_bruts:
+        print("Aucun fichier sélectionné. Arrêt du script.")
+        break
+
+    # Nettoyer les noms de fichiers (enlever le " (?)" pour le traitement)
+    fichiers_selectionnes = [f.replace(" (?)", "") for f in fichiers_selectionnes_bruts]
+    print(f"\n{len(fichiers_selectionnes)} fichier(s) sélectionné(s) :")
+
+    for fichier in fichiers_selectionnes:
+        print(f"  - {fichier}")
+
+    #8 Traitement des fichiers
+    donnees_structurees = {}
+    metriques_par_entreprise = {}  # Pour tracker les métriques par entreprise
+
+    for fichier in fichiers_selectionnes:
+        entreprise = trouver_entreprise(fichier, data_entreprises)
+
+        if not entreprise:
+            print(f"  Attention : Entreprise non trouvée dans le JSON pour {fichier}")
+            continue
+
+        nom_entreprise = entreprise['name']
+
+        # Créer la structure pour cette entreprise
+        donnees_structurees[nom_entreprise] = {
+            "infos": {
+                "ticker": entreprise['ticker'],
+                "secteur": entreprise['sector'],
+                "industrie": entreprise['industry'],
+                "pays": entreprise['country']
+            }
         }
-    }
 
-    chemin_fichier = os.path.join(chemin_base_donnees, fichier)
+        # Initialiser le compteur pour cette entreprise
+        metriques_par_entreprise[nom_entreprise] = {
+            "fichier": fichier,
+            "total": 0,
+            "manquantes": []
+        }
 
-    # Extraction des données par feuille
-    feuilles = {
-        'compte_de_resultat': ('compte de resultat', metriques_prix_juste_compte),
-        'bilan': ('bilan', metriques_prix_juste_bilan),
-        'flux_de_tresorerie': ('flux de tresorerie', metriques_prix_juste_fcf),
-        'valorisation': ('valorisation', metriques_prix_juste_valorisation)
-    }
+        chemin_fichier = os.path.join(chemin_base_donnees, fichier)
 
-    for cle_structure, (nom_feuille, metriques) in feuilles.items():
-        donnees = extraire_donnees(chemin_fichier, nom_feuille, metriques)
-        donnees_structurees[nom_entreprise][cle_structure] = donnees
-        metriques_total += len(donnees)
+        # Extraction des données par feuille
+        feuilles = {
+            'compte_de_resultat': ('compte de resultat', metriques_prix_juste_compte),
+            'bilan': ('bilan', metriques_prix_juste_bilan),
+            'flux_de_tresorerie': ('flux de tresorerie', metriques_prix_juste_fcf),
+            'valorisation': ('valorisation', metriques_prix_juste_valorisation)
+        }
 
-print(f"\nTotal de {metriques_total} / 22 lignes extraites")
+        for cle_structure, (nom_feuille, metriques) in feuilles.items():
+            donnees = extraire_donnees(chemin_fichier, nom_feuille, metriques)
+            donnees_structurees[nom_entreprise][cle_structure] = donnees
+            metriques_par_entreprise[nom_entreprise]["total"] += len(donnees)
 
-# Vérification des métriques manquantes
-if metriques_total != 22:
-    metriques_attendues = (
-        metriques_prix_juste_compte +
-        metriques_prix_juste_bilan +
-        metriques_prix_juste_fcf +
-        metriques_prix_juste_valorisation
-    )
+    # Calcul du total
+    metriques_total = sum(e["total"] for e in metriques_par_entreprise.values())
+    metriques_attendues_total = len(fichiers_selectionnes) * 22
 
-    # Collecter toutes les métriques récoltées
-    metriques_recoltees = []
-    for entreprise_data in donnees_structurees.values():
-        for feuille in ['compte_de_resultat', 'bilan', 'flux_de_tresorerie', 'valorisation']:
-            metriques_recoltees.extend(entreprise_data[feuille].keys())
+    print(f"\nTotal de {metriques_total} / {metriques_attendues_total} lignes extraites")
 
-    metriques_manquantes = [m for m in metriques_attendues if m not in metriques_recoltees]
+    # Vérification des métriques manquantes PAR ENTREPRISE
+    if metriques_total != metriques_attendues_total:
+        metriques_attendues = (
+            metriques_prix_juste_compte +
+            metriques_prix_juste_bilan +
+            metriques_prix_juste_fcf +
+            metriques_prix_juste_valorisation
+        )
 
-    if metriques_manquantes:
-        print(f"\n⚠️  ATTENTION : {len(metriques_manquantes)} métrique(s) manquante(s) :")
-        for metrique in metriques_manquantes:
-            print(f"  - {metrique}")
+        for nom_entreprise, info in metriques_par_entreprise.items():
+            if info["total"] != 22:
+                # Collecter les métriques récoltées pour cette entreprise
+                metriques_recoltees = []
+                entreprise_data = donnees_structurees[nom_entreprise]
+                for feuille in ['compte_de_resultat', 'bilan', 'flux_de_tresorerie', 'valorisation']:
+                    metriques_recoltees.extend(entreprise_data[feuille].keys())
 
-#9 Sauvegarde
-# Créer le dossier de sortie si nécessaire
-if not os.path.exists(chemin_json_finance):
-    os.makedirs(chemin_json_finance)
-    print(f"Dossier créé : {chemin_json_finance}")
+                # Identifier les manquantes
+                metriques_manquantes = [m for m in metriques_attendues if m not in metriques_recoltees]
 
-output_path = os.path.join(chemin_json_finance, fichier_json_output)
+                if metriques_manquantes:
+                    print(f"\n⚠️  {info['fichier']} - {len(metriques_manquantes)} métrique(s) manquante(s) :")
+                    for metrique in metriques_manquantes:
+                        print(f"     - {metrique}")
 
-# Charger les données existantes si le fichier existe
-donnees_existantes = {}
-if os.path.exists(output_path):
-    with open(output_path, 'r', encoding='utf-8') as f:
-        try:
-            donnees_chargees = json.load(f)
+    #9 Sauvegarde
+    # Créer le dossier de sortie si nécessaire
+    if not os.path.exists(chemin_json_finance):
+        os.makedirs(chemin_json_finance)
+        print(f"Dossier créé : {chemin_json_finance}")
 
-            # MIGRATION : Détecter ancien format (liste) et convertir en nouveau format (dict)
-            if isinstance(donnees_chargees, list):
-                print(f"⚠️  Migration : Ancien format détecté, conversion vers nouveau format...")
+    output_path = os.path.join(chemin_json_finance, fichier_json_output)
+
+    # Charger les données existantes si le fichier existe
+    donnees_existantes = {}
+    if os.path.exists(output_path):
+        with open(output_path, 'r', encoding='utf-8') as f:
+            try:
+                donnees_chargees = json.load(f)
+
+                # MIGRATION : Détecter ancien format (liste) et convertir en nouveau format (dict)
+                if isinstance(donnees_chargees, list):
+                    print(f"⚠️  Migration : Ancien format détecté, conversion vers nouveau format...")
+                    donnees_existantes = {}
+                    # L'ancien format n'est pas compatible, on recommence à zéro
+                    print(f"   Ancien fichier sauvegardé en {fichier_json_output}.old")
+                    # Sauvegarder l'ancien fichier
+                    import shutil
+                    shutil.copy(output_path, output_path + '.old')
+                else:
+                    # Nouveau format, chargement normal
+                    donnees_existantes = donnees_chargees
+
+            except json.JSONDecodeError:
+                print(f"⚠️  Avertissement : Fichier JSON corrompu, création d'un nouveau fichier")
                 donnees_existantes = {}
-                # L'ancien format n'est pas compatible, on recommence à zéro
-                print(f"   Ancien fichier sauvegardé en {fichier_json_output}.old")
-                # Sauvegarder l'ancien fichier
-                import shutil
-                shutil.copy(output_path, output_path + '.old')
-            else:
-                # Nouveau format, chargement normal
-                donnees_existantes = donnees_chargees
 
-        except json.JSONDecodeError:
-            print(f"⚠️  Avertissement : Fichier JSON corrompu, création d'un nouveau fichier")
-            donnees_existantes = {}
+    # Fusionner les nouvelles données avec les existantes (écrase les doublons)
+    donnees_existantes.update(donnees_structurees)
 
-# Fusionner les nouvelles données avec les existantes (écrase les doublons)
-donnees_existantes.update(donnees_structurees)
+    # Sauvegarder le tout
+    with open(output_path, 'w', encoding='utf-8') as f:
+        json.dump(donnees_existantes, f, ensure_ascii=False, indent=2)
 
-# Sauvegarder le tout
-with open(output_path, 'w', encoding='utf-8') as f:
-    json.dump(donnees_existantes, f, ensure_ascii=False, indent=2)
+    print(f"\nDonnées sauvegardées dans : {fichier_json_output}")
+    print(f"  - {len(donnees_structurees)} entreprise(s) ajoutée(s) : {', '.join(donnees_structurees.keys())}")
+    print(f"  - Total dans la base : {len(donnees_existantes)} entreprise(s)")
 
-print(f"\nDonnées sauvegardées dans : {fichier_json_output}")
-print(f"  - {len(donnees_structurees)} entreprise(s) ajoutée(s) : {', '.join(donnees_structurees.keys())}")
-print(f"  - Total dans la base : {len(donnees_existantes)} entreprise(s)")
+    # Demander si on veut continuer
+    question_continuer = [
+        inquirer.Confirm(
+            'continuer',
+            message="Voulez-vous traiter d'autres fichiers ?",
+            default=False
+        )
+    ]
+
+    reponse = inquirer.prompt(question_continuer)
+    if not reponse or not reponse['continuer']:
+        print("\n✅ Traitement terminé !")
+        break
+
+    print("\n" + "="*60)
