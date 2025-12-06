@@ -107,7 +107,7 @@ def trouver_entreprise(nom_fichier, data_entreprises):
 try:
     import inquirer
 except ImportError:
-    print("\nInstallation de la bibliothèque 'inquirer' nécessaire...")
+    print("\nInstallation de la bibliothèque 'inquirer' nécessaire")
     import subprocess
     subprocess.check_call(['pip', 'install', 'inquirer'])
     import inquirer
@@ -137,46 +137,64 @@ if not fichiers_selectionnes_bruts:
 
 # Nettoyer les noms de fichiers (enlever le " (?)" pour le traitement)
 fichiers_selectionnes = [f.replace(" (?)", "") for f in fichiers_selectionnes_bruts]
-
 print(f"\n{len(fichiers_selectionnes)} fichier(s) sélectionné(s) :")
+
 for fichier in fichiers_selectionnes:
     print(f"  - {fichier}")
 
 #6 Conversion des valeurs
 def convertir_valeur(valeur, metrique):
-    """Convertit les valeurs selon leur type et la métrique"""
+    """Convertit les valeurs selon leur type et la métrique - RETOURNE DES NOMBRES"""
     if pd.isna(valeur) or valeur == '' or valeur is None:
         return None
 
     valeur_str = str(valeur).strip()
 
-    # Garders les pourcentages
+    # Gérer les pourcentages (retourner comme float)
     if '%' in valeur_str:
-        return valeur_str
+        try:
+            return float(valeur_str.replace('%', '').replace(',', '.').strip())
+        except ValueError:
+            return None
 
-    # Ajouter % pour le taux d'imposition
-    if "imposition" in metrique.lower():
-        return f"{valeur_str}%"
+    # Ajouter % pour le taux d'imposition si pas déjà présent
+    if "imposition" in metrique.lower() and '%' not in valeur_str:
+        try:
+            return float(valeur_str.replace(',', '.').strip())
+        except ValueError:
+            return None
 
     # Enlever espaces
     valeur_str = valeur_str.replace(' ', '')
 
-    # Traiter Md
+    # Traiter Md (milliards)
     if 'Md' in valeur_str:
-        nombre = float(valeur_str.replace('Md', '').replace(',', '.'))
-        return str(nombre * 1000000000).replace('.', ',')
+        try:
+            nombre = float(valeur_str.replace('Md', '').replace(',', '.'))
+            return nombre * 1000000000
+        except ValueError:
+            return None
 
-    # Traiter M
+    # Traiter M (millions)
     if 'M' in valeur_str and 'Md' not in valeur_str:
-        nombre = float(valeur_str.replace('M', '').replace(',', '.'))
-        return str(nombre * 1000000).replace('.', ',')
+        try:
+            nombre = float(valeur_str.replace('M', '').replace(',', '.'))
+            return nombre * 1000000
+        except ValueError:
+            return None
 
-    # Traiter x
+    # Traiter x (multiples)
     if 'x' in valeur_str.lower():
-        return valeur_str.replace('x', '').replace('X', '')
+        try:
+            return float(valeur_str.replace('x', '').replace('X', '').replace(',', '.'))
+        except ValueError:
+            return None
 
-    # Retourner tel quel
-    return valeur_str
+    # Essayer de convertir en float
+    try:
+        return float(valeur_str.replace(',', '.'))
+    except ValueError:
+        return valeur_str  # Retourner la string si conversion impossible
 
 #7 Extrait les donnees
 def extraire_donnees(fichier_excel, sheet_name, metriques):
@@ -187,7 +205,7 @@ def extraire_donnees(fichier_excel, sheet_name, metriques):
         items_column = df.columns[0]
         colonnes_annees = df.columns[1:11]
 
-        resultats = []
+        resultats = {}
 
         for metrique in metriques:
             metrique_normalise = normaliser_nom(metrique)
@@ -195,25 +213,22 @@ def extraire_donnees(fichier_excel, sheet_name, metriques):
 
             for idx, row in df.iterrows():
                 item_normalise = normaliser_nom(str(row[items_column]))
-                # <CHANGE> Correspondance EXACTE au lieu de partielle
                 if metrique_normalise == item_normalise:
                     ligne_trouvee = row
                     break
 
             if ligne_trouvee is not None:
                 valeurs = {str(annees[i]): convertir_valeur(ligne_trouvee[colonnes_annees[i]], metrique) for i in range(len(annees))}
-                resultats.append({
-                    'Métrique': metrique,
-                    'Valeurs': valeurs
-                })
+                resultats[metrique] = valeurs
 
         return resultats
     except Exception as e:
         print(f"  Erreur lors de la lecture de la feuille '{sheet_name}': {e}")
-        return []
+        return {}
 
 #8 Traitement des fichiers
-toutes_donnees = []
+donnees_structurees = {}
+metriques_total = 0
 
 for fichier in fichiers_selectionnes:
     entreprise = trouver_entreprise(fichier, data_entreprises)
@@ -222,34 +237,37 @@ for fichier in fichiers_selectionnes:
         print(f"  Attention : Entreprise non trouvée dans le JSON pour {fichier}")
         continue
 
-    chemin_fichier = os.path.join(chemin_base_donnees, fichier)
+    nom_entreprise = entreprise['name']
 
-    # Correction des noms de feuilles (minuscules, sans accents)
-
-    feuilles = {
-        'compte de resultat': metriques_prix_juste_compte,
-        'bilan': metriques_prix_juste_bilan,
-        'flux de tresorerie': metriques_prix_juste_fcf,
-        'valorisation': metriques_prix_juste_valorisation
+    # Créer la structure pour cette entreprise
+    donnees_structurees[nom_entreprise] = {
+        "infos": {
+            "ticker": entreprise['ticker'],
+            "secteur": entreprise['sector'],
+            "industrie": entreprise['industry'],
+            "pays": entreprise['country']
+        }
     }
 
-    for sheet_name, metriques in feuilles.items():
-        donnees = extraire_donnees(chemin_fichier, sheet_name, metriques)
+    chemin_fichier = os.path.join(chemin_base_donnees, fichier)
 
-        for ligne in donnees:
-            ligne['Nom'] = entreprise['name']
-            ligne['Ticker'] = entreprise['ticker']
-            ligne['Secteur'] = entreprise['sector']
-            ligne['Industrie'] = entreprise['industry']
-            ligne['Pays'] = entreprise['country']
-            ligne['Feuille'] = sheet_name
-            toutes_donnees.append(ligne)
+    # Extraction des données par feuille
+    feuilles = {
+        'compte_de_resultat': ('compte de resultat', metriques_prix_juste_compte),
+        'bilan': ('bilan', metriques_prix_juste_bilan),
+        'flux_de_tresorerie': ('flux de tresorerie', metriques_prix_juste_fcf),
+        'valorisation': ('valorisation', metriques_prix_juste_valorisation)
+    }
 
-print(f"\nTotal de {len(toutes_donnees)} / 22 lignes extraites")
+    for cle_structure, (nom_feuille, metriques) in feuilles.items():
+        donnees = extraire_donnees(chemin_fichier, nom_feuille, metriques)
+        donnees_structurees[nom_entreprise][cle_structure] = donnees
+        metriques_total += len(donnees)
+
+print(f"\nTotal de {metriques_total} / 22 lignes extraites")
 
 # Vérification des métriques manquantes
-if len(toutes_donnees) != 22:
-    # Liste complète des métriques attendues
+if metriques_total != 22:
     metriques_attendues = (
         metriques_prix_juste_compte +
         metriques_prix_juste_bilan +
@@ -257,10 +275,12 @@ if len(toutes_donnees) != 22:
         metriques_prix_juste_valorisation
     )
 
-    # Métriques effectivement récoltées
-    metriques_recoltees = [ligne['Métrique'] for ligne in toutes_donnees]
+    # Collecter toutes les métriques récoltées
+    metriques_recoltees = []
+    for entreprise_data in donnees_structurees.values():
+        for feuille in ['compte_de_resultat', 'bilan', 'flux_de_tresorerie', 'valorisation']:
+            metriques_recoltees.extend(entreprise_data[feuille].keys())
 
-    # Identifier les métriques manquantes
     metriques_manquantes = [m for m in metriques_attendues if m not in metriques_recoltees]
 
     if metriques_manquantes:
@@ -277,28 +297,22 @@ if not os.path.exists(chemin_json_finance):
 output_path = os.path.join(chemin_json_finance, fichier_json_output)
 
 # Charger les données existantes si le fichier existe
-donnees_existantes = []
+donnees_existantes = {}
 if os.path.exists(output_path):
     with open(output_path, 'r', encoding='utf-8') as f:
         try:
             donnees_existantes = json.load(f)
         except json.JSONDecodeError:
             print(f"⚠️  Avertissement : Fichier JSON corrompu, création d'un nouveau fichier")
-            donnees_existantes = []
+            donnees_existantes = {}
 
-# Identifier les entreprises traitées dans cette session
-entreprises_traitees = list(set([ligne['Nom'] for ligne in toutes_donnees]))
-
-# Supprimer les anciennes données des entreprises traitées (éviter doublons)
-donnees_existantes = [ligne for ligne in donnees_existantes if ligne['Nom'] not in entreprises_traitees]
-
-# Ajouter les nouvelles données
-donnees_finales = donnees_existantes + toutes_donnees
+# Fusionner les nouvelles données avec les existantes (écrase les doublons)
+donnees_existantes.update(donnees_structurees)
 
 # Sauvegarder le tout
 with open(output_path, 'w', encoding='utf-8') as f:
-    json.dump(donnees_finales, f, ensure_ascii=False, indent=2)
+    json.dump(donnees_existantes, f, ensure_ascii=False, indent=2)
 
-print(f"Données sauvegardées dans : {fichier_json_output}")
-print(f"  - {len(entreprises_traitees)} entreprise(s) ajoutée(s) : {', '.join(entreprises_traitees)}")
-print(f"  - Total dans la base : {len(set([ligne['Nom'] for ligne in donnees_finales]))} entreprise(s)")
+print(f"\nDonnées sauvegardées dans : {fichier_json_output}")
+print(f"  - {len(donnees_structurees)} entreprise(s) ajoutée(s) : {', '.join(donnees_structurees.keys())}")
+print(f"  - Total dans la base : {len(donnees_existantes)} entreprise(s)")
