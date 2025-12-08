@@ -87,9 +87,20 @@ def calculer_prix_juste_benefice(entreprise_data, rendement_cible=15, horizon_an
 
     # Étape 4 : PER médian historique
     print("\n[4] CALCUL DU PER MÉDIAN HISTORIQUE")
-    print("  (À implémenter : nécessite prix historiques)")
-    per_median = 15  # Valeur par défaut pour l'instant
-    print(f"  ➜ PER médian = {per_median} (valeur par défaut)")
+    per_historiques = entreprise_data.get('valorisation', {}).get('PER', {})
+
+    per_valeurs = []
+    for annee, per in per_historiques.items():
+        if per and per > 0:  # Exclure valeurs négatives ou nulles
+            per_valeurs.append(per)
+            print(f"  {annee}: {per:.1f}")
+
+    if len(per_valeurs) < 3:
+        print("❌ Pas assez de données PER")
+        return None
+
+    per_median = statistics.median(per_valeurs)
+    print(f"  ➜ PER médian = {per_median:.1f}")
 
     # Étape 5 : Prix futur
     print(f"\n[5] CALCUL DU PRIX FUTUR")
