@@ -22,6 +22,28 @@ RATIOS_STANDARD = JSON_FINANCE_DIR / "ratios_standard.json"
 OUTPUT_JSON = JSON_FINANCE_DIR / "resultats_prix_juste.json"
 OUTPUT_CSV = JSON_FINANCE_DIR / "resultats_prix_juste.csv"
 
+def calculer_bpa(entreprise_data):
+    """Calcule le Bénéfice Par Action (BPA) 2024
+
+    Args:
+        entreprise_data: Dictionnaire des données de l'entreprise
+
+    Returns:
+        float: BPA ou None si données manquantes
+    """
+    # Récupérer le résultat net 2024
+    resultat_net = entreprise_data.get('compte_de_resultat', {}).get('Résultat net', {}).get('2024')
+
+    # Récupérer le nombre d'actions en circulation
+    actions = entreprise_data.get('donnees_actuelles', {}).get('actions_circulation')
+
+    # Calcul
+    if resultat_net and actions:
+        bpa = resultat_net / actions
+        return round(bpa, 2)
+
+    return None
+
 def determiner_taille(capitalisation):
     """Détermine la taille de l'entreprise selon sa capitalisation
 
