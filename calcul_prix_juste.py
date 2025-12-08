@@ -1,101 +1,113 @@
 """
 Script de calcul du prix juste des actions
-Version étape par étape
+Méthode : Bénéfice Par Action (BPA)
 """
 
 import json
+import statistics
 from pathlib import Path
 
 # Chemins des fichiers
 SCRIPT_DIR = Path(__file__).parent
 JSON_FINANCE_DIR = SCRIPT_DIR / "json_finance"
 BDD_FILE = JSON_FINANCE_DIR / "bdd_zb_prix_juste.json"
-RATIOS_CONSERVATEUR = JSON_FINANCE_DIR / "ratios_conservateur.json"
-RATIOS_STANDARD = JSON_FINANCE_DIR / "ratios_standard.json"
 OUTPUT_JSON = JSON_FINANCE_DIR / "resultats_prix_juste.json"
 
-print("✅ Configuration OK")
-
-def calculer_prix_juste_benefice(entreprise_data, rendement_cible=15, horizon_annees=5):
+def calculer_prix_juste_bpa(entreprise_data, rendement_cible=15):
     """
-    Calcule le prix juste basé sur le bénéfice par action
+    Calcule le prix juste basé sur le BPA
 
-    Formule :
-    1. BPA actuel = Résultat net 2024 / Actions en circulation
-    2. Croissance médiane = Médiane des taux de croissance 2015-2024
-    3. BPA futur = BPA actuel × (1 + croissance)^horizon_annees
-    4. Prix futur = BPA futur × PER médian historique
-    5. Prix juste = Prix futur / (1 + rendement_cible)^horizon_annees
+    Formules :
+    A. Croissance_t = (BPA_t / BPA_t-1) - 1
+    B. CAGR_median = Mediane(Croissance_1 ... Croissance_n)
+    C. BPA_projete = BPA_dernier * (1 + CAGR_median)
+    D. PER_median = Mediane(PER_1 ... PER_n)
+    E. Prix_juste_BPA = BPA_projete * PER_median
+    F. Prix_achat_BPA = Prix_juste_BPA / (1 + Rendement_cible/100)
 
     Args:
         entreprise_data: Données de l'entreprise
-        rendement_cible: Rendement annuel souhaité en % (défaut 15%)
-        horizon_annees: Nombre d'années de projection (défaut 10)
+        rendement_cible: Marge de sécurité en % (défaut 15%)
 
     Returns:
-        dict: Résultats du calcul
+        dict: Résultats du calcul ou None
     """
-    import statistics
 
-    # Étape 1 : BPA actuel
-    resultat_net_2024 = entreprise_data.get('compte_de_resultat', {}).get('Résultat net', {}).get('2024')
-    actions = entreprise_data.get('donnees_actuelles', {}).get('actions_circulation')
+    # Extraction des colonnes
+    bpa_data = entreprise_data.get('compte_de_resultat', {}).get('BPA de base normalisé', {})
+    per_data = entreprise_data.get('valorisation', {}).get('PER', {})
+    prix_actuel = entreprise_data.get('donnees_actuelles', {}).get('prix_actuel')
 
-    if not resultat_net_2024 or not actions:
+    if not bpa_data or not per_data:
         return None
 
-    bpa_actuel = resultat_net_2024 / actions
-
-    # Étape 2 : Croissance médiane
-    benefices = entreprise_data.get('compte_de_resultat', {}).get('Résultat net', {})
     annees = ['2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023', '2024']
 
-    taux_croissance = []
+    # Étape A : Croissance annuelle du BPA
+    croissances = []
     for i in range(1, len(annees)):
-        annee_prec = annees[i-1]
-        annee_actu = annees[i]
+        bpa_prec = bpa_data.get(annees[i-1])
+        bpa_actu = bpa_data.get(annees[i])
 
-        val_prec = benefices.get(annee_prec)
-        val_actu = benefices.get(annee_actu)
+        if bpa_prec and bpa_actu and bpa_prec > 0:
+            croissance = (bpa_actu / bpa_prec) - 1
+            croissances.append(croissance)
 
-        if val_prec and val_actu and val_prec > 0:
-            taux = ((val_actu / val_prec) - 1) * 100
-            taux_croissance.append(taux)
-
-    if len(taux_croissance) < 3:
+    if len(croissances) < 3:
         return None
 
-    croissance_mediane = statistics.median(taux_croissance)
+    # Étape B : CAGR médian
+    cagr_median = statistics.median(croissances)
 
-    # Étape 3 : BPA futur
-    bpa_futur = bpa_actuel * ((1 + croissance_mediane/100) ** horizon_annees)
-
-    # Étape 4 : PER médian historique
-    per_historiques = entreprise_data.get('valorisation', {}).get('PER', {})
-
-    per_valeurs = []
-    for annee, per in per_historiques.items():
-        if per and per > 0:
-            per_valeurs.append(per)
-
-    if len(per_valeurs) < 3:
+    # Étape C : BPA projeté
+    bpa_dernier = bpa_data.get('2024')
+    if not bpa_dernier:
         return None
 
-    per_median = statistics.median(per_valeurs)
+    bpa_projete = bpa_dernier * (1 + cagr_median)
 
-    # Étape 5 : Prix futur
-    prix_futur = bpa_futur * per_median
+    # Étape D : PER médian
+    per_values = []
+    for annee in annees:
+        per = per_data.get(annee)
+        if per and per > 0 and per < 100:  # Exclure aberrations
+            per_values.append(per)
 
-    # Étape 6 : Prix juste aujourd'hui
-    prix_juste = prix_futur / ((1 + rendement_cible/100) ** horizon_annees)
+    if len(per_values) < 3:
+        return None
+
+    per_median = statistics.median(per_values)
+
+    # Étape E : Prix Juste BPA
+    prix_juste_bpa = bpa_projete * per_median
+
+    # Étape F : Prix d'Achat (marge de sécurité)
+    prix_achat_bpa = prix_juste_bpa / (1 + rendement_cible/100)
 
     return {
-        'bpa_actuel': round(bpa_actuel, 2),
-        'croissance_mediane_%': round(croissance_mediane, 2),
-        'bpa_futur': round(bpa_futur, 2),
+        'bpa_2024': round(bpa_dernier, 2),
+        'croissance_mediane_%': round(cagr_median * 100, 2),
+        'bpa_projete_2025': round(bpa_projete, 2),
         'per_median': round(per_median, 1),
-        'prix_futur': round(prix_futur, 2),
-        'prix_juste': round(prix_juste, 2),
-        'rendement_cible_%': rendement_cible,
-        'horizon_annees': horizon_annees
+        'prix_juste_bpa': round(prix_juste_bpa, 2),
+        'prix_achat_bpa': round(prix_achat_bpa, 2),
+        'prix_actuel': prix_actuel,
+        'rendement_cible_%': rendement_cible
     }
+
+
+if __name__ == "__main__":
+    # Test
+    with open(BDD_FILE, 'r', encoding='utf-8') as f:
+        bdd = json.load(f)
+
+    for nom_entreprise in list(bdd.keys())[:2]:
+        print(f"\n{'='*60}")
+        print(f"{nom_entreprise}")
+        print('='*60)
+
+        resultat = calculer_prix_juste_bpa(bdd[nom_entreprise])
+
+        if resultat:
+            for key, value in resultat.items():
+                print(f"{key:25} : {value}")
