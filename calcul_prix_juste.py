@@ -16,7 +16,7 @@ OUTPUT_JSON = JSON_FINANCE_DIR / "resultats_prix_juste.json"
 
 print("✅ Configuration OK")
 
-def calculer_prix_juste_benefice(entreprise_data, rendement_cible=15, horizon_annees=10):
+def calculer_prix_juste_benefice(entreprise_data, rendement_cible=15, horizon_annees=5):
     """
     Calcule le prix juste basé sur le bénéfice par action
 
