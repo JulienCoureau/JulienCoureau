@@ -11,6 +11,7 @@ import json
 import os
 from pathlib import Path
 import pandas as pd
+import statistics
 
 # Chemins des fichiers
 SCRIPT_DIR = Path(__file__).parent
@@ -63,6 +64,51 @@ def trouver_ratios(secteur, taille, ratios_data):
             return ratio
 
     return None
+
+def calculer_croissance_mediane(entreprise_data):
+    """Calcule la médiane de croissance sur 10 ans (2015-2024) pour toutes les métriques
+
+    Args:
+        entreprise_data: Données de l'entreprise
+
+    Returns:
+        dict: Médianes de croissance par métrique (en %)
+    """
+    annees = ['2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023', '2024']
+
+    metriques = {
+        'ca': entreprise_data.get('compte_de_resultat', {}).get('Total Chiffre d\'affaires', {}),
+        'benefice': entreprise_data.get('compte_de_resultat', {}).get('Résultat net', {}),
+        'fcf': entreprise_data.get('flux_de_tresorerie', {}).get('Flux de trésorerie libre pour les actionnaires FCFE', {}),
+        'ebitda': entreprise_data.get('compte_de_resultat', {}).get('EBITDA', {})
+    }
+
+    resultats = {}
+
+    for nom_metrique, donnees_metrique in metriques.items():
+        taux_croissance = []
+
+        # Calculer les taux de croissance année par année
+        for i in range(1, len(annees)):
+            annee_precedente = annees[i-1]
+            annee_actuelle = annees[i]
+
+            valeur_precedente = donnees_metrique.get(annee_precedente)
+            valeur_actuelle = donnees_metrique.get(annee_actuelle)
+
+            # Vérifier que les deux valeurs existent et sont positives
+            if valeur_precedente and valeur_actuelle and valeur_precedente > 0:
+                taux = ((valeur_actuelle / valeur_precedente) - 1) * 100
+                taux_croissance.append(taux)
+
+        # Calculer la médiane si on a au moins 3 points de données
+        if len(taux_croissance) >= 3:
+            mediane = statistics.median(taux_croissance)
+            resultats[nom_metrique] = round(mediane, 2)
+        else:
+            resultats[nom_metrique] = None
+
+    return resultats
 
 def calculer_prix_juste(entreprise_data, ratios):
     """Calcule le prix juste d'une action

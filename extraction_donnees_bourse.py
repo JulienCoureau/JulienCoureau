@@ -13,9 +13,9 @@ from pathlib import Path
 """Configuration des dossiers à traiter et métriques à prendre"""
 
 # Chemins des dossiers
-#chemin_code = os.path.expanduser("~/Documents/Data_Bourse/Code")
-chemin_json_finance = os.path.expanduser("~/Documents/Data_Bourse/Code/json_finance") # contenant le fichier json
-chemin_base_donnees = os.path.expanduser("~/Documents/Data_Bourse/Base_de_donnee") # contenant les excels
+SCRIPT_DIR = Path(__file__).parent
+chemin_json_finance = SCRIPT_DIR / "json_finance"  # contenant le fichier json
+chemin_base_donnees = SCRIPT_DIR / "Base_de_donnee"  # contenant les excels
 
 # Fichiers
 fichier_json_input = "name_action.json"  # Fichier JSON contenant les informations des entreprises (nom, ticker, industrie)
@@ -61,7 +61,7 @@ metriques_prix_juste_valorisation = [
 ]
 
 #1 Chargement du fichier json
-json_path = os.path.join(chemin_json_finance, fichier_json_input)
+json_path = chemin_json_finance / fichier_json_input
 
 if not os.path.exists(json_path):
     print(f"Erreur : Fichier JSON non trouvé : {json_path}")
@@ -258,7 +258,7 @@ while True:
             "manquantes": []
         }
 
-        chemin_fichier = os.path.join(chemin_base_donnees, fichier)
+        chemin_fichier = chemin_base_donnees / fichier
 
         # Extraction des données par feuille
         feuilles = {
@@ -310,7 +310,7 @@ while True:
         os.makedirs(chemin_json_finance)
         print(f"Dossier créé : {chemin_json_finance}")
 
-    output_path = os.path.join(chemin_json_finance, fichier_json_output)
+    output_path = chemin_json_finance / fichier_json_output
 
     # Charger les données existantes si le fichier existe
     donnees_existantes = {}
