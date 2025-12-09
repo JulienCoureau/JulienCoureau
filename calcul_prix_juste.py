@@ -96,18 +96,122 @@ def calculer_prix_juste_bpa(entreprise_data, rendement_cible=15):
     }
 
 
+def calculer_prix_juste_fcf(entreprise_data, rendement_cible=15):
+    """
+    Calcule le prix juste basé sur le FCF (Free Cash Flow)
+
+    Formules :
+    A. FCF_par_action_t = FCFE_t / Actions
+    B. Croissance_t = (FCF_par_action_t / FCF_par_action_t-1) - 1
+    C. CAGR_median = Mediane(Croissance_1 ... Croissance_n)
+    D. FCF_par_action_projete = FCF_par_action_dernier * (1 + CAGR_median)
+    E. FCF_Yield_median = Mediane(FCF_Yield_1 ... FCF_Yield_n)
+    F. Prix_juste_FCF = FCF_par_action_projete / (FCF_Yield_median/100)
+    G. Prix_achat_FCF = Prix_juste_FCF / (1 + Rendement_cible/100)
+
+    Args:
+        entreprise_data: Données de l'entreprise
+        rendement_cible: Marge de sécurité en % (défaut 15%)
+
+    Returns:
+        dict: Résultats du calcul ou None
+    """
+
+    # Extraction des colonnes
+    fcfe_data = entreprise_data.get('flux_de_tresorerie', {}).get('Flux de trésorerie libre pour les actionnaires FCFE', {})
+    fcf_yield_data = entreprise_data.get('valorisation', {}).get('FCF Yield', {})
+    actions = entreprise_data.get('donnees_actuelles', {}).get('actions_circulation')
+    prix_actuel = entreprise_data.get('donnees_actuelles', {}).get('prix_actuel')
+
+    if not fcfe_data or not fcf_yield_data or not actions:
+        return None
+
+    annees = ['2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023', '2024']
+
+    # Étape A : FCF par action historique
+    fcf_par_action = {}
+    for annee in annees:
+        fcfe = fcfe_data.get(annee)
+        if fcfe:
+            fcf_par_action[annee] = fcfe / actions
+
+    if len(fcf_par_action) < 2:
+        return None
+
+    # Étape B : Croissance annuelle du FCF par action
+    croissances = []
+    for i in range(1, len(annees)):
+        fcf_prec = fcf_par_action.get(annees[i-1])
+        fcf_actu = fcf_par_action.get(annees[i])
+
+        if fcf_prec and fcf_actu and fcf_prec > 0:
+            croissance = (fcf_actu / fcf_prec) - 1
+            croissances.append(croissance)
+
+    if len(croissances) < 3:
+        return None
+
+    # Étape C : CAGR médian
+    cagr_median = statistics.median(croissances)
+
+    # Étape D : FCF par action projeté
+    fcf_dernier = fcf_par_action.get('2024')
+    if not fcf_dernier:
+        return None
+
+    fcf_projete = fcf_dernier * (1 + cagr_median)
+
+    # Étape E : FCF Yield médian
+    fcf_yield_values = []
+    for annee in annees:
+        fcf_yield = fcf_yield_data.get(annee)
+        if fcf_yield and fcf_yield > 0:
+            fcf_yield_values.append(fcf_yield)
+
+    if len(fcf_yield_values) < 3:
+        return None
+
+    fcf_yield_median = statistics.median(fcf_yield_values)
+
+    # Étape F : Prix Juste FCF
+    # FCF Yield = FCF / Prix donc Prix = FCF / FCF_Yield
+    prix_juste_fcf = fcf_projete / (fcf_yield_median / 100)
+
+    # Étape G : Prix d'Achat (marge de sécurité)
+    prix_achat_fcf = prix_juste_fcf / (1 + rendement_cible/100)
+
+    return {
+        'fcf_par_action_2024': round(fcf_dernier, 2),
+        'croissance_mediane_%': round(cagr_median * 100, 2),
+        'fcf_par_action_projete_2025': round(fcf_projete, 2),
+        'fcf_yield_median_%': round(fcf_yield_median, 2),
+        'prix_juste_fcf': round(prix_juste_fcf, 2),
+        'prix_achat_fcf': round(prix_achat_fcf, 2),
+        'prix_actuel': prix_actuel,
+        'rendement_cible_%': rendement_cible
+    }
+
+
 if __name__ == "__main__":
     # Test
     with open(BDD_FILE, 'r', encoding='utf-8') as f:
         bdd = json.load(f)
 
     for nom_entreprise in list(bdd.keys())[:2]:
-        print(f"\n{'='*60}")
+        print(f"\n{'='*70}")
         print(f"{nom_entreprise}")
-        print('='*60)
+        print('='*70)
 
-        resultat = calculer_prix_juste_bpa(bdd[nom_entreprise])
+        print("\n📊 MÉTHODE BPA")
+        print('-'*70)
+        resultat_bpa = calculer_prix_juste_bpa(bdd[nom_entreprise])
+        if resultat_bpa:
+            for key, value in resultat_bpa.items():
+                print(f"{key:30} : {value}")
 
-        if resultat:
-            for key, value in resultat.items():
-                print(f"{key:25} : {value}")
+        print("\n📊 MÉTHODE FCF")
+        print('-'*70)
+        resultat_fcf = calculer_prix_juste_fcf(bdd[nom_entreprise])
+        if resultat_fcf:
+            for key, value in resultat_fcf.items():
+                print(f"{key:30} : {value}")
