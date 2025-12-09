@@ -41,13 +41,14 @@ def calculer_prix_juste_bpa(entreprise_data, rendement_cible=15):
     if not bpa_data or not per_data:
         return None
 
-    annees = ['2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023', '2024']
+    annees_croissance = ['2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023', '2024']
+    annees_valorisation = ['2020', '2021', '2022', '2023', '2024']
 
-    # Étape A : Croissance annuelle du BPA
+    # Étape A : Croissance annuelle du BPA (10 ans)
     croissances = []
-    for i in range(1, len(annees)):
-        bpa_prec = bpa_data.get(annees[i-1])
-        bpa_actu = bpa_data.get(annees[i])
+    for i in range(1, len(annees_croissance)):
+        bpa_prec = bpa_data.get(annees_croissance[i-1])
+        bpa_actu = bpa_data.get(annees_croissance[i])
 
         if bpa_prec and bpa_actu and bpa_prec > 0:
             croissance = (bpa_actu / bpa_prec) - 1
@@ -66,9 +67,9 @@ def calculer_prix_juste_bpa(entreprise_data, rendement_cible=15):
 
     bpa_projete = bpa_dernier * (1 + cagr_median)
 
-    # Étape D : PER médian
+    # Étape D : PER médian (5 ans seulement)
     per_values = []
-    for annee in annees:
+    for annee in annees_valorisation:
         per = per_data.get(annee)
         if per and per > 0 and per < 100:  # Exclure aberrations
             per_values.append(per)
@@ -126,11 +127,12 @@ def calculer_prix_juste_fcf(entreprise_data, rendement_cible=15):
     if not fcfe_data or not fcf_yield_data or not actions:
         return None
 
-    annees = ['2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023', '2024']
+    annees_croissance = ['2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023', '2024']
+    annees_valorisation = ['2020', '2021', '2022', '2023', '2024']
 
-    # Étape A : FCF par action historique
+    # Étape A : FCF par action historique (10 ans)
     fcf_par_action = {}
-    for annee in annees:
+    for annee in annees_croissance:
         fcfe = fcfe_data.get(annee)
         if fcfe:
             fcf_par_action[annee] = fcfe / actions
@@ -138,11 +140,11 @@ def calculer_prix_juste_fcf(entreprise_data, rendement_cible=15):
     if len(fcf_par_action) < 2:
         return None
 
-    # Étape B : Croissance annuelle du FCF par action
+    # Étape B : Croissance annuelle du FCF par action (10 ans)
     croissances = []
-    for i in range(1, len(annees)):
-        fcf_prec = fcf_par_action.get(annees[i-1])
-        fcf_actu = fcf_par_action.get(annees[i])
+    for i in range(1, len(annees_croissance)):
+        fcf_prec = fcf_par_action.get(annees_croissance[i-1])
+        fcf_actu = fcf_par_action.get(annees_croissance[i])
 
         if fcf_prec and fcf_actu and fcf_prec > 0:
             croissance = (fcf_actu / fcf_prec) - 1
@@ -161,9 +163,9 @@ def calculer_prix_juste_fcf(entreprise_data, rendement_cible=15):
 
     fcf_projete = fcf_dernier * (1 + cagr_median)
 
-    # Étape E : FCF Yield médian
+    # Étape E : FCF Yield médian (5 ans seulement)
     fcf_yield_values = []
-    for annee in annees:
+    for annee in annees_valorisation:
         fcf_yield = fcf_yield_data.get(annee)
         if fcf_yield and fcf_yield > 0:
             fcf_yield_values.append(fcf_yield)
