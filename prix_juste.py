@@ -21,10 +21,8 @@ fichier_json_input = "name_action.json"  # Fichier JSON contenant les informatio
 fichier_json_output = "bdd_zb_prix_juste.json"  # Fichier JSON de sortie avec toutes les données extraites
 
 # Note : nommer les  fichiers Excel par le nom de l'entreprise (ex: schneider.xlsx, asml.xlsx), le scipt fera la correspondance des noms
-# Années à extraire (10 ans pour la plupart des métriques)
-annees_10ans = [2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024]
-# Années pour valorisation (5 dernières années seulement disponibles)
-annees_5ans = [2020, 2021, 2022, 2023, 2024]
+# Années à extraire (le code s'adapte automatiquement au nombre de colonnes disponibles)
+annees = [2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024]
 
 metriques_prix_juste_compte = [
     "Total Chiffre d'affaires",
@@ -304,15 +302,15 @@ while True:
         chemin_fichier = os.path.join(chemin_base_donnees, fichier)
 
         # Extraction des données par feuille
-        # Note: valorisation utilise 5 ans, les autres 10 ans
+        # Le code s'adapte automatiquement au nombre de colonnes disponibles dans chaque feuille
         feuilles = {
-            'compte_de_resultat': ('compte de resultat', metriques_prix_juste_compte, annees_10ans),
-            'bilan': ('bilan', metriques_prix_juste_bilan, annees_10ans),
-            'flux_de_tresorerie': ('flux de tresorerie', metriques_prix_juste_fcf, annees_10ans),
-            'valorisation': ('valorisation', metriques_prix_juste_valorisation, annees_5ans)
+            'compte_de_resultat': ('compte de resultat', metriques_prix_juste_compte),
+            'bilan': ('bilan', metriques_prix_juste_bilan),
+            'flux_de_tresorerie': ('flux de tresorerie', metriques_prix_juste_fcf),
+            'valorisation': ('valorisation', metriques_prix_juste_valorisation)
         }
 
-        for cle_structure, (nom_feuille, metriques, annees) in feuilles.items():
+        for cle_structure, (nom_feuille, metriques) in feuilles.items():
             donnees = extraire_donnees(chemin_fichier, nom_feuille, metriques, annees)
             donnees_structurees[nom_entreprise][cle_structure] = donnees
             metriques_par_entreprise[nom_entreprise]["total"] += len(donnees)
