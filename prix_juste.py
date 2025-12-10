@@ -55,7 +55,9 @@ metriques_prix_juste_fcf = [
 metriques_prix_juste_valorisation = [
     "PER",
     "Valeur Entreprise / EBITDA",
-    "FCF Yield"
+    "FCF Yield",
+    "PBR",
+    "Capitalisation / CA"
 ]
 
 #1 Chargement du fichier json
@@ -321,7 +323,7 @@ while True:
 
     # Calcul du total
     metriques_total = sum(e["total"] for e in metriques_par_entreprise.values())
-    metriques_attendues_total = len(fichiers_selectionnes) * 22
+    metriques_attendues_total = len(fichiers_selectionnes) * 24
 
     print(f"\nTotal de {metriques_total} / {metriques_attendues_total} lignes extraites")
 
@@ -335,7 +337,7 @@ while True:
         )
 
         for nom_entreprise, info in metriques_par_entreprise.items():
-            if info["total"] != 22:
+            if info["total"] != 24:
                 # Collecter les métriques récoltées pour cette entreprise
                 metriques_recoltees = []
                 entreprise_data = donnees_structurees[nom_entreprise]
