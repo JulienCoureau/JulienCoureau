@@ -188,7 +188,7 @@ def extraire_donnees(fichier_excel, sheet_name, metriques, annees):
         fichier_excel: chemin du fichier Excel
         sheet_name: nom de la feuille
         metriques: liste des métriques à extraire
-        annees: liste des années à extraire (10 ans ou 5 ans selon la feuille)
+        annees: liste des années à extraire (s'adapte au nombre de colonnes disponibles)
     """
     try:
         df = pd.read_excel(fichier_excel, sheet_name=sheet_name, header=0)
@@ -203,6 +203,10 @@ def extraire_donnees(fichier_excel, sheet_name, metriques, annees):
         nb_colonnes_a_lire = min(nb_annees, nb_colonnes_disponibles)
         colonnes_annees = df.columns[1:nb_colonnes_a_lire + 1]
 
+        # Prendre les DERNIÈRES années si moins de colonnes disponibles
+        # Ex: si 5 colonnes dispo et annees = [2015,...,2024], on prend [2020,2021,2022,2023,2024]
+        annees_a_utiliser = annees[-nb_colonnes_a_lire:]
+
         resultats = {}
 
         for metrique in metriques:
@@ -216,10 +220,10 @@ def extraire_donnees(fichier_excel, sheet_name, metriques, annees):
                     break
 
             if ligne_trouvee is not None:
-                # Utiliser seulement les années disponibles
+                # Utiliser seulement les années disponibles (les dernières)
                 valeurs = {}
                 for i in range(nb_colonnes_a_lire):
-                    annee = annees[i]
+                    annee = annees_a_utiliser[i]
                     valeurs[str(annee)] = convertir_valeur(ligne_trouvee[colonnes_annees[i]], metrique)
                 resultats[metrique] = valeurs
 
