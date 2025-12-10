@@ -505,6 +505,38 @@ class PrixJuste:
             "detail_ventes": result_ventes
         }
 
+    # === Validation des données ===
+    def _valider_entreprise(self, nom_entreprise: str) -> tuple:
+        """
+        Vérifie si une entreprise a les données minimales requises.
+
+        Args:
+            nom_entreprise: Nom de l'entreprise
+
+        Returns:
+            Tuple (est_valide, message_erreur)
+        """
+        entreprise = self.data.get(nom_entreprise, {})
+
+        # Vérifier donnees_actuelles
+        if "donnees_actuelles" not in entreprise:
+            return False, "donnees_actuelles manquantes"
+
+        donnees = entreprise["donnees_actuelles"]
+        champs_requis = ["prix_actuel", "devise", "capitalisation", "actions_circulation"]
+        for champ in champs_requis:
+            if champ not in donnees or donnees[champ] is None:
+                return False, f"{champ} manquant dans donnees_actuelles"
+
+        # Vérifier infos
+        if "infos" not in entreprise:
+            return False, "infos manquantes"
+
+        if "secteur" not in entreprise["infos"]:
+            return False, "secteur manquant dans infos"
+
+        return True, "OK"
+
     # === Interface publique ===
     def calculer(self, nom_entreprise: str = None) -> Dict:
         """
@@ -517,10 +549,24 @@ class PrixJuste:
             Dictionnaire des résultats
         """
         if nom_entreprise:
-            self.resultats[nom_entreprise] = self._calculer_prix_pondere(nom_entreprise)
+            est_valide, msg = self._valider_entreprise(nom_entreprise)
+            if est_valide:
+                self.resultats[nom_entreprise] = self._calculer_prix_pondere(nom_entreprise)
+            else:
+                self.resultats[nom_entreprise] = {
+                    "prix_juste": None,
+                    "erreur": f"Donnees invalides: {msg}"
+                }
         else:
             for nom in self.data.keys():
-                self.resultats[nom] = self._calculer_prix_pondere(nom)
+                est_valide, msg = self._valider_entreprise(nom)
+                if est_valide:
+                    self.resultats[nom] = self._calculer_prix_pondere(nom)
+                else:
+                    self.resultats[nom] = {
+                        "prix_juste": None,
+                        "erreur": f"Donnees invalides: {msg}"
+                    }
         return self.resultats
 
     def afficher(self):
@@ -530,13 +576,22 @@ class PrixJuste:
         print(f"{'Entreprise':<35} {'Actuel':>10} {'Juste':>10} {'Ecart':>8}")
         print("-" * 70)
 
+        entreprises_invalides = []
+
         for nom, result in self.resultats.items():
-            prix_actuel = self.data[nom]["donnees_actuelles"]["prix_actuel"]
-            devise = self.data[nom]["donnees_actuelles"]["devise"]
+            # Vérifier si les données actuelles existent
+            donnees_actuelles = self.data[nom].get("donnees_actuelles", {})
+            prix_actuel = donnees_actuelles.get("prix_actuel")
+            devise = donnees_actuelles.get("devise", "?")
             prix_juste = result.get("prix_juste")
 
             # Symbole devise
-            symbole = "E" if devise == "EUR" else "$" if devise == "USD" else devise[0]
+            symbole = "E" if devise == "EUR" else "$" if devise == "USD" else devise[0] if devise else "?"
+
+            # Si données actuelles manquantes
+            if prix_actuel is None:
+                entreprises_invalides.append((nom, result.get("erreur", "Donnees manquantes")))
+                continue
 
             if prix_juste is None:
                 print(
@@ -561,6 +616,12 @@ class PrixJuste:
         print("=" * 70)
         print("[+] Sous-evalue (>10%)  [=] Neutre (+/-10%)  [-] Surevalue (<-10%)")
 
+        # Afficher les entreprises avec données invalides
+        if entreprises_invalides:
+            print(f"\n[!] {len(entreprises_invalides)} entreprise(s) ignoree(s) (donnees incompletes):")
+            for nom, erreur in entreprises_invalides:
+                print(f"    - {nom[:40]}: {erreur}")
+
     def detail(self, nom_entreprise: str):
         """
         Affiche le détail complet d'une entreprise.
@@ -568,19 +629,34 @@ class PrixJuste:
         Args:
             nom_entreprise: Nom de l'entreprise
         """
+        if nom_entreprise not in self.data:
+            print(f"\n[!] Entreprise '{nom_entreprise}' non trouvee dans la base de donnees.")
+            return
+
         if nom_entreprise not in self.resultats:
             self.calculer(nom_entreprise)
 
         result = self.resultats[nom_entreprise]
         entreprise = self.data[nom_entreprise]
 
-        prix_actuel = entreprise["donnees_actuelles"]["prix_actuel"]
-        devise = entreprise["donnees_actuelles"]["devise"]
-        ticker = entreprise["infos"]["ticker"]
+        # Récupérer les données de manière sécurisée
+        donnees_actuelles = entreprise.get("donnees_actuelles", {})
+        prix_actuel = donnees_actuelles.get("prix_actuel")
+        devise = donnees_actuelles.get("devise", "?")
+        infos = entreprise.get("infos", {})
+        ticker = infos.get("ticker", "N/A")
 
         print(f"\n{'=' * 70}")
         print(f"DETAIL : {nom_entreprise} ({ticker})")
         print(f"{'=' * 70}")
+
+        # Vérifier si les données sont valides
+        if prix_actuel is None:
+            print(f"[!] Donnees incompletes pour cette entreprise")
+            print(f"Erreur: {result.get('erreur', 'donnees_actuelles manquantes')}")
+            print(f"{'=' * 70}")
+            return
+
         print(
             f"Secteur: {result.get('secteur', 'N/A')} | "
             f"Taille: {result.get('taille', 'N/A')} | Devise: {devise}"
@@ -670,20 +746,26 @@ class PrixJuste:
         export_data = {}
         for nom, result in self.resultats.items():
             entreprise = self.data[nom]
-            prix_actuel = entreprise["donnees_actuelles"]["prix_actuel"]
+            donnees_actuelles = entreprise.get("donnees_actuelles", {})
+            infos = entreprise.get("infos", {})
+
+            prix_actuel = donnees_actuelles.get("prix_actuel")
             prix_juste = result.get("prix_juste")
 
+            # Calculer l'écart uniquement si les deux prix sont disponibles
+            ecart_pct = None
+            if prix_juste is not None and prix_actuel is not None and prix_actuel != 0:
+                ecart_pct = (prix_juste - prix_actuel) / prix_actuel * 100
+
             export_data[nom] = {
-                "ticker": entreprise["infos"]["ticker"],
+                "ticker": infos.get("ticker", "N/A"),
                 "secteur": result.get("secteur"),
                 "taille": result.get("taille"),
-                "devise": entreprise["donnees_actuelles"]["devise"],
+                "devise": donnees_actuelles.get("devise", "?"),
                 "prix_actuel": prix_actuel,
                 "prix_juste": prix_juste,
-                "ecart_pct": (
-                    ((prix_juste - prix_actuel) / prix_actuel * 100)
-                    if prix_juste else None
-                ),
+                "ecart_pct": ecart_pct,
+                "erreur": result.get("erreur"),
                 "methodes_utilisees": result.get("methodes_utilisees", []),
                 "detail_bpa": result.get("detail_bpa"),
                 "detail_fcf": result.get("detail_fcf"),
