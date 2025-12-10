@@ -1,0 +1,257 @@
+{
+  "data": [
+    {
+      "secteur_yahoo": "Industrials",
+      "taille": "Large",
+      "cle": "Industrials_Large",
+      "ratio_benefice": 0.30,
+      "ratio_fcf": 0.40,
+      "ratio_ventes": 0.15,
+      "ratio_ebitda": 0.15,
+      "ratio_book_value": 0,
+      "facteur_decote": 0.90
+    },
+    {
+      "secteur_yahoo": "Industrials",
+      "taille": "Mid",
+      "cle": "Industrials_Mid",
+      "ratio_benefice": 0.25,
+      "ratio_fcf": 0.35,
+      "ratio_ventes": 0.20,
+      "ratio_ebitda": 0.15,
+      "ratio_book_value": 0.05,
+      "facteur_decote": 0.85
+    },
+    {
+      "secteur_yahoo": "Industrials",
+      "taille": "Small",
+      "cle": "Industrials_Small",
+      "ratio_benefice": 0.20,
+      "ratio_fcf": 0.30,
+      "ratio_ventes": 0.25,
+      "ratio_ebitda": 0.15,
+      "ratio_book_value": 0.10,
+      "facteur_decote": 0.80
+    },
+    {
+      "secteur_yahoo": "Technology",
+      "taille": "Large",
+      "cle": "Technology_Large",
+      "ratio_benefice": 0.25,
+      "ratio_fcf": 0.45,
+      "ratio_ventes": 0.20,
+      "ratio_ebitda": 0.10,
+      "ratio_book_value": 0,
+      "facteur_decote": 0.90
+    },
+    {
+      "secteur_yahoo": "Technology",
+      "taille": "Mid",
+      "cle": "Technology_Mid",
+      "ratio_benefice": 0.20,
+      "ratio_fcf": 0.40,
+      "ratio_ventes": 0.25,
+      "ratio_ebitda": 0.10,
+      "ratio_book_value": 0.05,
+      "facteur_decote": 0.85
+    },
+    {
+      "secteur_yahoo": "Technology",
+      "taille": "Small",
+      "cle": "Technology_Small",
+      "ratio_benefice": 0.15,
+      "ratio_fcf": 0.35,
+      "ratio_ventes": 0.30,
+      "ratio_ebitda": 0.10,
+      "ratio_book_value": 0.10,
+      "facteur_decote": 0.80
+    },
+    {
+      "secteur_yahoo": "Consumer Cyclical",
+      "taille": "Large",
+      "cle": "Consumer Cyclical_Large",
+      "ratio_benefice": 0.30,
+      "ratio_fcf": 0.35,
+      "ratio_ventes": 0.20,
+      "ratio_ebitda": 0.15,
+      "ratio_book_value": 0,
+      "facteur_decote": 0.90
+    },
+    {
+      "secteur_yahoo": "Consumer Cyclical",
+      "taille": "Mid",
+      "cle": "Consumer Cyclical_Mid",
+      "ratio_benefice": 0.25,
+      "ratio_fcf": 0.30,
+      "ratio_ventes": 0.25,
+      "ratio_ebitda": 0.15,
+      "ratio_book_value": 0.05,
+      "facteur_decote": 0.85
+    },
+    {
+      "secteur_yahoo": "Financial Services",
+      "taille": "Large",
+      "cle": "Financial Services_Large",
+      "ratio_benefice": 0.35,
+      "ratio_fcf": 0.20,
+      "ratio_ventes": 0.10,
+      "ratio_ebitda": 0.10,
+      "ratio_book_value": 0.25,
+      "facteur_decote": 0.90
+    },
+    {
+      "secteur_yahoo": "Financial Services",
+      "taille": "Mid",
+      "cle": "Financial Services_Mid",
+      "ratio_benefice": 0.30,
+      "ratio_fcf": 0.20,
+      "ratio_ventes": 0.10,
+      "ratio_ebitda": 0.10,
+      "ratio_book_value": 0.30,
+      "facteur_decote": 0.85
+    },
+    {
+      "secteur_yahoo": "Healthcare",
+      "taille": "Large",
+      "cle": "Healthcare_Large",
+      "ratio_benefice": 0.25,
+      "ratio_fcf": 0.40,
+      "ratio_ventes": 0.20,
+      "ratio_ebitda": 0.15,
+      "ratio_book_value": 0,
+      "facteur_decote": 0.90
+    },
+    {
+      "secteur_yahoo": "Healthcare",
+      "taille": "Mid",
+      "cle": "Healthcare_Mid",
+      "ratio_benefice": 0.20,
+      "ratio_fcf": 0.35,
+      "ratio_ventes": 0.25,
+      "ratio_ebitda": 0.15,
+      "ratio_book_value": 0.05,
+      "facteur_decote": 0.85
+    },
+    {
+      "secteur_yahoo": "Energy",
+      "taille": "Large",
+      "cle": "Energy_Large",
+      "ratio_benefice": 0.20,
+      "ratio_fcf": 0.35,
+      "ratio_ventes": 0.15,
+      "ratio_ebitda": 0.20,
+      "ratio_book_value": 0.10,
+      "facteur_decote": 0.90
+    },
+    {
+      "secteur_yahoo": "Energy",
+      "taille": "Mid",
+      "cle": "Energy_Mid",
+      "ratio_benefice": 0.15,
+      "ratio_fcf": 0.30,
+      "ratio_ventes": 0.20,
+      "ratio_ebitda": 0.20,
+      "ratio_book_value": 0.15,
+      "facteur_decote": 0.85
+    },
+    {
+      "secteur_yahoo": "Utilities",
+      "taille": "Large",
+      "cle": "Utilities_Large",
+      "ratio_benefice": 0.25,
+      "ratio_fcf": 0.30,
+      "ratio_ventes": 0.15,
+      "ratio_ebitda": 0.20,
+      "ratio_book_value": 0.10,
+      "facteur_decote": 0.90
+    },
+    {
+      "secteur_yahoo": "Consumer Defensive",
+      "taille": "Large",
+      "cle": "Consumer Defensive_Large",
+      "ratio_benefice": 0.30,
+      "ratio_fcf": 0.35,
+      "ratio_ventes": 0.20,
+      "ratio_ebitda": 0.15,
+      "ratio_book_value": 0,
+      "facteur_decote": 0.90
+    },
+    {
+      "secteur_yahoo": "Communication Services",
+      "taille": "Large",
+      "cle": "Communication Services_Large",
+      "ratio_benefice": 0.25,
+      "ratio_fcf": 0.40,
+      "ratio_ventes": 0.20,
+      "ratio_ebitda": 0.15,
+      "ratio_book_value": 0,
+      "facteur_decote": 0.90
+    },
+    {
+      "secteur_yahoo": "Real Estate",
+      "taille": "Large",
+      "cle": "Real Estate_Large",
+      "ratio_benefice": 0.20,
+      "ratio_fcf": 0.25,
+      "ratio_ventes": 0.15,
+      "ratio_ebitda": 0.15,
+      "ratio_book_value": 0.25,
+      "facteur_decote": 0.90
+    },
+    {
+      "secteur_yahoo": "Basic Materials",
+      "taille": "Large",
+      "cle": "Basic Materials_Large",
+      "ratio_benefice": 0.20,
+      "ratio_fcf": 0.30,
+      "ratio_ventes": 0.20,
+      "ratio_ebitda": 0.20,
+      "ratio_book_value": 0.10,
+      "facteur_decote": 0.90
+    },
+    {
+      "secteur_yahoo": "Default",
+      "taille": "Large",
+      "cle": "Default_Large",
+      "ratio_benefice": 0.25,
+      "ratio_fcf": 0.35,
+      "ratio_ventes": 0.20,
+      "ratio_ebitda": 0.15,
+      "ratio_book_value": 0.05,
+      "facteur_decote": 0.90
+    },
+    {
+      "secteur_yahoo": "Default",
+      "taille": "Mid",
+      "cle": "Default_Mid",
+      "ratio_benefice": 0.25,
+      "ratio_fcf": 0.30,
+      "ratio_ventes": 0.20,
+      "ratio_ebitda": 0.15,
+      "ratio_book_value": 0.10,
+      "facteur_decote": 0.85
+    },
+    {
+      "secteur_yahoo": "Default",
+      "taille": "Small",
+      "cle": "Default_Small",
+      "ratio_benefice": 0.20,
+      "ratio_fcf": 0.25,
+      "ratio_ventes": 0.25,
+      "ratio_ebitda": 0.15,
+      "ratio_book_value": 0.15,
+      "facteur_decote": 0.80
+    },
+    {
+      "secteur_yahoo": "Default",
+      "taille": "Micro",
+      "cle": "Default_Micro",
+      "ratio_benefice": 0.15,
+      "ratio_fcf": 0.20,
+      "ratio_ventes": 0.30,
+      "ratio_ebitda": 0.15,
+      "ratio_book_value": 0.20,
+      "facteur_decote": 0.75
+    }
+  ]
+}
