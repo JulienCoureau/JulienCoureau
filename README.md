@@ -1,4 +1,4 @@
-# Salut, je suis Julien Coureau 👋
+# Salut, je suis Julien Coureau
 
 ### Développeur Python & Analyste de la Performance
 
